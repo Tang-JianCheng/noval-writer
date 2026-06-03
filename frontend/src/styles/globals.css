@@ -1,0 +1,49 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg-deep: #12100e;
+  --bg-base: #1a1714;
+  --bg-surface: #221e1a;
+  --bg-elevated: #2c2722;
+  --bg-hover: #322d27;
+  --bg-input: #1e1b17;
+  --border-subtle: #2a2520;
+  --border-default: #3a342e;
+  --border-accent: #5a4a36;
+  --text-primary: #e4dcc8;
+  --text-secondary: #b8ae9a;
+  --text-muted: #6b6358;
+  --text-dim: #4a443c;
+  --accent: #d4a853;
+  --accent-dim: #8b6930;
+  --accent-glow: #e8c97a;
+  --accent-bg: rgba(212, 168, 83, 0.08);
+  --success: #7a8b6e;
+  --success-bg: rgba(122, 139, 110, 0.12);
+  --warning: #d4943a;
+  --warning-bg: rgba(212, 148, 58, 0.12);
+  --danger: #b85c5c;
+  --danger-bg: rgba(184, 92, 92, 0.12);
+  --font-display: 'Playfair Display', 'Noto Serif SC', serif;
+  --font-body: 'Crimson Pro', 'Noto Serif SC', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-accent); }
+
+::selection { background: rgba(212, 168, 83, 0.3); color: var(--text-primary); }
