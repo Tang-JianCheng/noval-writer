@@ -30,8 +30,12 @@ def parse_json(text: str) -> dict | list:
 
 
 def extract_section(text: str, start_marker: str, end_marker: str | None) -> str:
+    # Try bracketed form [MARKER] first, then bare MARKER
     pattern = re.escape(f"[{start_marker}]")
     m = re.search(pattern, text)
+    if not m:
+        pattern = re.escape(start_marker)
+        m = re.search(pattern, text)
     if not m:
         return ""
     start = m.end()
