@@ -13,4 +13,4 @@ def test_create_llm_client_deepseek():
 
 def test_deepseek_adapter_model_name():
     adapter = DeepSeekAdapter(api_key="test")
-    assert adapter.model_name == "deepseek-chat"
+    assert adapter.model_name == "deepseek-v4-pro"

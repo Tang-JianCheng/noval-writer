@@ -14,8 +14,7 @@ class Settings(BaseSettings):
     wenxin_secret_key: str = ""
     chapter_storage_path: str = "./projects"
 
-    class Config:
-        env_file = ".env"
+    model_config = {"env_file": ".env"}
 
 
 settings = Settings()

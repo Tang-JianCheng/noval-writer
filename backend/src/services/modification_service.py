@@ -42,9 +42,9 @@ class ModificationService:
         return list(result.scalars().all())
 
     async def resolve(self, log_id: str, resolution: str) -> ModificationLog | None:
-        from datetime import datetime
+        from datetime import datetime, timezone
         log = await self.db.get(ModificationLog, log_id)
         if log:
-            log.resolved_at = datetime.utcnow()
+            log.resolved_at = datetime.now(tz=timezone.utc)
             await self.db.commit()
         return log
