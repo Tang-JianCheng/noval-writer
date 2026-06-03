@@ -1,6 +1,6 @@
 # NovalWriter — 多智能体小说写作系统 · 需求设计文档
 
-> 版本: v1.1 | 日期: 2026-06-03 | 状态: 设计完成（新增 Information Agent），待进入实施计划
+> 版本: v1.3 | 日期: 2026-06-03 | 状态: 设计完成（新增测试策略 + 版本控制），待进入实施计划
 
 ---
 
@@ -768,7 +768,114 @@ describe('WebSocketIntegration', () => {
 
 ---
 
-## 12. 附录：前端原型
+## 12. 版本控制策略
+
+### 12.1 仓库
+
+- **平台**：Git（本地仓库），未来可推送至 GitHub / GitLab
+- **主分支**：`main` — 始终保持可发布状态
+- **初始化**：已完成 `git init` + 初始提交（设计文档 + 前端原型）
+
+### 12.2 分支模型
+
+```
+main          ★── 生产就绪，每个 milestone 合并一次
+  │
+  ├─ develop      ◆── 日常开发集成分支
+  │    │
+  │    ├─ phase/01-llm-abstraction     LLM 抽象层 + Mock + 输出解析
+  │    ├─ phase/02-data-model          PostgreSQL 表 + 文件存储 + CRUD
+  │    ├─ phase/03-dispatcher          调度器状态机 + 上下文组装算法
+  │    ├─ phase/04-module-agents       6个模块Agent (prompt 模板 + 解析)
+  │    ├─ phase/05-writing-agent       写作Agent + 摘要生成 + 聚合
+  │    ├─ phase/06-api-websocket       REST API + WebSocket 实时推送
+  │    ├─ phase/07-modification        修改级联逻辑
+  │    └─ phase/08-frontend            前端页面 + 组件
+  │
+  └─ fix/*                            紧急修复分支（从 main 拉出）
+```
+
+### 12.3 分支命名规范
+
+| 类型 | 格式 | 示例 |
+|------|------|------|
+| 功能开发 | `phase/{序号}-{名称}` | `phase/03-dispatcher` |
+| 紧急修复 | `fix/{描述}` | `fix/context-token-overflow` |
+| 实验性 | `exp/{描述}` | `exp/rag-context-retrieval` |
+| 发布准备 | `release/{版本号}` | `release/v0.1.0` |
+
+### 12.4 关键 Milestone 与版本标签
+
+每个 Phase 完成后合并到 `main` 并打标签：
+
+| 标签 | Phase | 内容 | 可演示功能 |
+|------|-------|------|-----------|
+| `v0.1.0` | 1+2 | LLM 抽象层 + 数据模型 | 数据库建表，Mock LLM 可返回预设响应 |
+| `v0.2.0` | 3 | 调度器状态机 | 状态机在 Mock 下正确流转 |
+| `v0.3.0` | 4 | 6个模块Agent | 大纲构建流程跑通（Mock LLM） |
+| `v0.4.0` | 5 | 写作Agent | 章节生成 + 摘要跑通（Mock LLM） |
+| `v0.5.0` | 6 | API + WebSocket | 后端完整可调用的 API |
+| `v0.6.0` | 7 | 修改级联 | 修改→标记→处理流程 |
+| `v0.7.0` | 8 | 前端 MVP | 仪表盘 + 大纲工作室 + 章节写作 |
+| `v1.0.0` | — | 真实 LLM 集成 + 冒烟测试 | 完整可用产品 |
+
+### 12.5 合并流程
+
+```
+1. 从 develop 拉出 feature 分支：phase/0X-xxx
+2. 在 feature 分支上 TDD 开发：
+   a. 写测试 → 提交
+   b. 实现代码 → 提交
+   c. 重构 → 提交
+3. 所有测试通过 → PR/MR 到 develop
+4. develop 集成测试通过 → 合并到 main
+5. 在 main 上打 tag → 标记版本
+```
+
+### 12.6 Commit 规范
+
+使用 Conventional Commits：
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+```
+
+| Type | 用途 |
+|------|------|
+| `feat` | 新功能 |
+| `fix` | 修复 Bug |
+| `test` | 添加/修改测试 |
+| `refactor` | 重构（无功能变化） |
+| `docs` | 文档 |
+| `chore` | 构建/工具/依赖 |
+
+**示例：**
+```
+feat(dispatcher): add state machine with 9 states
+
+- IDLE → BUILDING_OUTLINE → AWAITING_OUTLINE_CONFIRM → ...
+- State persistence to PostgreSQL
+- WebSocket notification on state change
+
+Closes #12
+```
+
+```
+test(context): add token budget enforcement tests
+
+- Test 80% threshold triggers trimming
+- Test trim order: warm → hot → character cards
+```
+
+### 12.7 .gitignore 已配置
+
+忽略规则覆盖：Python、Node、IDE、环境变量、用户生成内容（`projects/`）、日志、数据库文件。
+
+---
+
+## 13. 附录：前端原型
 
 完整交互原型位于：`frontend-design/index.html`
 直接用浏览器打开即可体验三个核心页面的交互流程。
