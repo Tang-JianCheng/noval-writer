@@ -7,7 +7,7 @@ class DeepSeekAdapter(LLMClient):
     def __init__(self, api_key: str, base_url: str = "https://api.deepseek.com/v1"):
         self.api_key = api_key
         self.base_url = base_url
-        self.model_name = "deepseek-chat"
+        self.model_name = "deepseek-v4-pro"
 
     async def chat(self, prompt: str, system_prompt: str = "") -> LLMResponse:
         messages = []
