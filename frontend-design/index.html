@@ -1,0 +1,1999 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NovalWriter — 多智能体小说写作系统</title>
+<style>
+/* ============================================================
+   NOVALWRITER — "Writer's Study" Design System
+   A dark, warm, editorial aesthetic for novelists
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  /* === Core Palette — Warm Dark Theme === */
+  --bg-deep:        #12100e;
+  --bg-base:        #1a1714;
+  --bg-surface:     #221e1a;
+  --bg-elevated:    #2c2722;
+  --bg-hover:       #322d27;
+  --bg-input:       #1e1b17;
+
+  /* === Borders === */
+  --border-subtle:  #2a2520;
+  --border-default: #3a342e;
+  --border-accent:  #5a4a36;
+
+  /* === Text === */
+  --text-primary:   #e4dcc8;
+  --text-secondary: #b8ae9a;
+  --text-muted:     #6b6358;
+  --text-dim:       #4a443c;
+
+  /* === Accent — Amber Lamplight === */
+  --accent:         #d4a853;
+  --accent-dim:     #8b6930;
+  --accent-glow:    #e8c97a;
+  --accent-bg:      rgba(212, 168, 83, 0.08);
+  --accent-border:  rgba(212, 168, 83, 0.25);
+
+  /* === Semantic === */
+  --success:        #7a8b6e;
+  --success-bg:     rgba(122, 139, 110, 0.12);
+  --warning:        #d4943a;
+  --warning-bg:     rgba(212, 148, 58, 0.12);
+  --danger:         #b85c5c;
+  --danger-bg:      rgba(184, 92, 92, 0.12);
+  --info:           #6b8fa3;
+  --info-bg:        rgba(107, 143, 163, 0.12);
+
+  /* === Status Colors === */
+  --status-draft:   #6b6458;
+  --status-outline: #8b8458;
+  --status-writing: #d4a853;
+  --status-done:    #7a8b6e;
+
+  /* === Typography === */
+  --font-display:   'Playfair Display', 'Noto Serif SC', 'STSong', serif;
+  --font-body:      'Crimson Pro', 'Noto Serif SC', 'STSong', serif;
+  --font-mono:      'JetBrains Mono', 'Source Code Pro', monospace;
+  --font-ui:        system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* === Spacing === */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* === Radii === */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+
+  /* === Shadows === */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
+  --shadow-glow: 0 0 24px rgba(212,168,83,0.12);
+
+  /* === Transitions === */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* Subtle paper grain texture overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.03;
+  background-image:
+    repeating-conic-gradient(var(--bg-base) 0% 10%, transparent 10% 20%);
+  background-size: 3px 3px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-accent); }
+
+/* Selection */
+::selection { background: rgba(212,168,83,0.3); color: var(--text-primary); }
+
+/* ============================================================
+   LAYOUT — App Shell
+   ============================================================ */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* === Top Navigation Bar === */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding: 0 var(--space-lg);
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.topbar-brand .brand-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-md);
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.topbar-nav button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.topbar-nav button:hover { color: var(--text-primary); background: var(--bg-hover); }
+.topbar-nav button.active { color: var(--accent); background: var(--accent-bg); }
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--duration-fast) var(--ease-out);
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #1a1714;
+  border-color: var(--accent);
+}
+.btn-primary:hover { background: var(--accent-glow); box-shadow: var(--shadow-glow); }
+
+.btn-secondary {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+.btn-secondary:hover { background: var(--bg-hover); border-color: var(--border-accent); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: transparent;
+}
+.btn-ghost:hover { color: var(--text-primary); background: var(--bg-hover); }
+
+.btn-danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: rgba(184,92,92,0.2);
+}
+.btn-danger:hover { background: rgba(184,92,92,0.2); }
+
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-xs { padding: 2px 8px; font-size: 11px; border-radius: var(--radius-sm); }
+
+/* ============================================================
+   PAGE CONTAINER
+   ============================================================ */
+.page-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-slow) var(--ease-out);
+  overflow: hidden;
+}
+
+.page.active {
+  opacity: 1;
+  pointer-events: auto;
+  position: relative;
+}
+
+/* ============================================================
+   PAGE 1: DASHBOARD
+   ============================================================ */
+.dashboard {
+  padding: var(--space-xl) var(--space-2xl);
+  overflow-y: auto;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-xl);
+}
+
+.dashboard-header h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+.dashboard-header p {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.dashboard-stats {
+  display: flex;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  min-width: 140px;
+}
+
+.stat-card .stat-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stat-card .stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+/* Project Cards Grid */
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--space-md);
+}
+
+.project-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  cursor: pointer;
+  transition: all var(--duration-base) var(--ease-out);
+  position: relative;
+  overflow: hidden;
+}
+
+.project-card:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-elevated);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.project-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border-subtle);
+  transition: background var(--duration-base) var(--ease-out);
+}
+
+.project-card:hover::before { background: var(--accent); }
+
+.project-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+
+.project-card-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.project-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: var(--space-sm);
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.meta-row .meta-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.project-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.status-draft      { background: rgba(107,100,88,0.15); color: #9b9488; }
+.status-outline    { background: rgba(139,132,88,0.15); color: #bfb878; }
+.status-writing    { background: var(--accent-bg); color: var(--accent); }
+.status-completed  { background: var(--success-bg); color: var(--success); }
+
+/* Warning chip on card */
+.warning-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--warning-bg);
+  border: 1px solid rgba(212,148,58,0.2);
+  border-radius: 100px;
+  color: var(--warning);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ============================================================
+   PAGE 2: OUTLINE STUDIO
+   ============================================================ */
+.outline-studio {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Module Tabs */
+.module-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 var(--space-lg);
+  flex-shrink: 0;
+}
+
+.module-tab {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.module-tab:hover { color: var(--text-secondary); }
+.module-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.module-tab .tab-icon {
+  font-size: 15px;
+  opacity: 0.7;
+}
+
+.module-tab.active .tab-icon { opacity: 1; }
+
+/* Studio Body: Sidebar + Main */
+.studio-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Plot Tree Sidebar */
+.plot-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.plot-sidebar-header {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plot-sidebar-header h3 {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.plot-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-sm) 0;
+}
+
+.tree-node {
+  padding: 2px 0;
+}
+
+.tree-node-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: all var(--duration-fast) var(--ease-out);
+  border-left: 2px solid transparent;
+  user-select: none;
+}
+
+.tree-node-header:hover { color: var(--text-primary); background: var(--bg-hover); }
+.tree-node-header.active {
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-left-color: var(--accent);
+}
+
+.tree-toggle {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.tree-toggle.expanded { transform: rotate(90deg); }
+
+.tree-node-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-node-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 100px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  flex-shrink: 0;
+}
+
+.tree-children { overflow: hidden; }
+.tree-children.collapsed { display: none; }
+
+.tree-children .tree-node-header { padding-left: 28px; }
+.tree-children .tree-children .tree-node-header { padding-left: 44px; }
+
+/* Studio Main Content */
+.studio-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.studio-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xl);
+}
+
+/* Module Content Panels */
+.module-panel { display: none; }
+.module-panel.active { display: block; }
+
+.module-panel h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: var(--space-lg);
+  color: var(--text-primary);
+}
+
+/* Character Cards */
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-md);
+}
+
+.character-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  cursor: pointer;
+  transition: all var(--duration-base) var(--ease-out);
+  position: relative;
+}
+
+.character-card:hover { border-color: var(--border-accent); background: var(--bg-elevated); }
+.character-card.selected { border-color: var(--accent); box-shadow: var(--shadow-glow); }
+
+.character-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+
+.character-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.character-role {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-family: var(--font-ui);
+}
+
+.character-details {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.character-details .detail-row {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: 4px;
+}
+
+.character-details .detail-label {
+  color: var(--text-muted);
+  min-width: 40px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.character-current-state {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm);
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.state-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+}
+
+/* OOC Warning */
+.ooc-warning {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--warning-bg);
+  border: 1px solid rgba(212,148,58,0.2);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--warning);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Form Elements */
+.form-group {
+  margin-bottom: var(--space-md);
+}
+
+.form-label {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.form-input, .form-textarea {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  transition: border-color var(--duration-fast) var(--ease-out);
+  resize: vertical;
+}
+
+.form-input:focus, .form-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.form-textarea { min-height: 80px; line-height: 1.6; }
+
+/* Scene Cards */
+.scene-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.scene-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+
+.scene-name {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* Tag / Keyword */
+.tag-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: var(--space-sm);
+}
+
+.tag {
+  padding: 4px 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 100px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.tag:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Studio Footer Bar */
+.studio-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-xl);
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.modification-warning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 6px 12px;
+  background: var(--warning-bg);
+  border: 1px solid rgba(212,148,58,0.2);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--warning);
+}
+
+/* ============================================================
+   PAGE 3: CHAPTER WRITING
+   ============================================================ */
+.chapter-writing {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.writing-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.writing-toolbar .chapter-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.writing-toolbar .chapter-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.writing-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Left Panel — Context */
+.context-panel {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  overflow-y: auto;
+  transition: width var(--duration-base) var(--ease-out);
+}
+
+.context-panel.collapsed { width: 0; overflow: hidden; }
+
+.context-panel-inner { padding: var(--space-md); min-width: 280px; }
+
+.context-section {
+  margin-bottom: var(--space-lg);
+}
+
+.context-section h4 {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.context-item {
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.context-item .ci-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-family: var(--font-ui);
+}
+
+.context-summary {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.6;
+  padding: var(--space-sm);
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  border-left: 2px solid var(--border-accent);
+}
+
+/* Center — Writing Area */
+.writing-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-deep);
+}
+
+.writing-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2xl);
+  max-width: 780px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.writing-content .chapter-text {
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 2;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+.writing-content .chapter-text p {
+  margin-bottom: 1.2em;
+  text-indent: 2em;
+}
+
+/* Typing cursor animation */
+.typing-cursor::after {
+  content: '|';
+  color: var(--accent);
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Right Panel — Status */
+.status-panel {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-subtle);
+  overflow-y: auto;
+  transition: width var(--duration-base) var(--ease-out);
+}
+
+.status-panel.collapsed { width: 0; overflow: hidden; }
+
+.status-panel-inner { padding: var(--space-md); min-width: 240px; }
+
+.status-section { margin-bottom: var(--space-lg); }
+
+.status-section h4 {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+.generation-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--accent);
+  font-family: var(--font-ui);
+}
+
+.generation-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.word-count-display {
+  text-align: center;
+  padding: var(--space-md);
+}
+
+.word-count-display .wc-number {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.word-count-display .wc-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* Writing Footer */
+.writing-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-xl);
+  background: var(--bg-base);
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+/* Toggle Panel Buttons */
+.panel-toggle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 48px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all var(--duration-fast) var(--ease-out);
+  border-radius: 3px;
+}
+
+.panel-toggle:hover { color: var(--accent); border-color: var(--accent); }
+.panel-toggle.left { left: 0; }
+.panel-toggle.right { right: 0; }
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+.modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  max-width: 520px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal h3 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  margin-bottom: var(--space-sm);
+}
+
+.modal p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+  line-height: 1.6;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.toast {
+  padding: 10px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+  animation: slideInRight var(--duration-base) var(--ease-spring);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.toast.success { border-color: rgba(122,139,110,0.4); }
+.toast.warning { border-color: rgba(212,148,58,0.4); }
+.toast.error   { border-color: rgba(184,92,92,0.4); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 900px) {
+  .plot-sidebar { width: 220px; }
+  .context-panel { width: 220px; }
+  .status-panel { width: 200px; }
+  .writing-content { padding: var(--space-lg); }
+}
+
+/* ============================================================
+   AGENT PROGRESS INDICATOR
+   ============================================================ */
+.agent-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.agent-progress-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: var(--font-ui);
+}
+
+.agent-progress-item .ap-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ap-dot.running { background: var(--accent); animation: pulse-dot 1s ease-in-out infinite; }
+.ap-dot.done    { background: var(--success); }
+.ap-dot.waiting { background: var(--text-dim); }
+.ap-dot.error   { background: var(--danger); }
+
+.agent-progress-item.running { color: var(--accent); }
+.agent-progress-item.done    { color: var(--success); }
+.agent-progress-item.waiting { color: var(--text-dim); }
+.agent-progress-item.error   { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div class="app-shell">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="brand-icon">&#9998;</div>
+      NovalWriter
+    </div>
+    <nav class="topbar-nav" id="topbarNav">
+      <button data-page="dashboard" class="active">项目</button>
+    </nav>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="showToast('info', '设置功能即将推出')" title="设置">&#9881;</button>
+    </div>
+  </header>
+
+  <!-- Page Container -->
+  <div class="page-container">
+
+    <!-- ============================================================
+         PAGE 1: DASHBOARD
+         ============================================================ -->
+    <div class="page active" id="page-dashboard">
+      <div class="dashboard">
+        <div class="dashboard-header">
+          <div>
+            <h1>我的项目</h1>
+            <p>管理你的小说创作项目</p>
+          </div>
+          <button class="btn btn-primary" onclick="openNewProjectModal()">+ 新建项目</button>
+        </div>
+
+        <div class="dashboard-stats">
+          <div class="stat-card">
+            <div class="stat-value" id="statTotalProjects">3</div>
+            <div class="stat-label">总项目</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statTotalWords">158,200</div>
+            <div class="stat-label">总字数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statActiveWriting">1</div>
+            <div class="stat-label">写作中</div>
+          </div>
+        </div>
+
+        <div class="project-grid" id="projectGrid">
+          <!-- Project Card 1 — Writing -->
+          <div class="project-card" onclick="openOutlineStudio('修仙从炼丹开始')">
+            <div class="project-card-header">
+              <div class="project-card-title">修仙从炼丹开始</div>
+              <span class="status-badge status-writing">● 写作中</span>
+            </div>
+            <div class="project-card-meta">
+              <div class="meta-row">第 47 章<span class="meta-dot"></span>共 158,000 字</div>
+              <div class="meta-row">
+                <span class="warning-chip">&#9888; 角色设定修改影响第12、15章</span>
+              </div>
+            </div>
+            <div class="project-card-footer">
+              <span>上次编辑：2 小时前</span>
+              <span style="color:var(--accent);">继续写作 →</span>
+            </div>
+          </div>
+
+          <!-- Project Card 2 — Outline Confirmed -->
+          <div class="project-card" onclick="openOutlineStudio('都市侦探录')">
+            <div class="project-card-header">
+              <div class="project-card-title">都市侦探录</div>
+              <span class="status-badge status-outline">◉ 大纲已确认</span>
+            </div>
+            <div class="project-card-meta">
+              <div class="meta-row">大纲完成 · 5个模块就绪</div>
+              <div class="meta-row">预估 35 章 · 约 150,000 字</div>
+            </div>
+            <div class="project-card-footer">
+              <span>上次编辑：昨天</span>
+              <span style="color:var(--accent);">开始写作 →</span>
+            </div>
+          </div>
+
+          <!-- Project Card 3 — Draft -->
+          <div class="project-card" onclick="openOutlineStudio('新世界')">
+            <div class="project-card-header">
+              <div class="project-card-title">新世界</div>
+              <span class="status-badge status-draft">○ 草稿</span>
+            </div>
+            <div class="project-card-meta">
+              <div class="meta-row">仅标题 · 需构建大纲</div>
+            </div>
+            <div class="project-card-footer">
+              <span>创建于：3 天前</span>
+              <span style="color:var(--text-muted);">构建大纲 →</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         PAGE 2: OUTLINE STUDIO
+         ============================================================ -->
+    <div class="page" id="page-outline-studio">
+      <div class="outline-studio">
+        <!-- Module Tabs -->
+        <div class="module-tabs" id="moduleTabs">
+          <button class="module-tab active" data-module="theme">
+            <span class="tab-icon">&#9733;</span> 主题
+          </button>
+          <button class="module-tab" data-module="characters">
+            <span class="tab-icon">&#128100;</span> 角色
+          </button>
+          <button class="module-tab" data-module="plot">
+            <span class="tab-icon">&#128196;</span> 情节
+          </button>
+          <button class="module-tab" data-module="setting">
+            <span class="tab-icon">&#127758;</span> 环境
+          </button>
+          <button class="module-tab" data-module="narrative">
+            <span class="tab-icon">&#128221;</span> 叙事
+          </button>
+        </div>
+
+        <!-- Studio Body -->
+        <div class="studio-body">
+          <!-- Plot Tree Sidebar -->
+          <aside class="plot-sidebar">
+            <div class="plot-sidebar-header">
+              <h3>情节结构</h3>
+              <button class="btn btn-ghost btn-xs" onclick="showToast('info', '添加情节节点')">+</button>
+            </div>
+            <div class="plot-tree" id="plotTree">
+              <!-- Built via JS -->
+            </div>
+          </aside>
+
+          <!-- Main Content -->
+          <div class="studio-main">
+            <div class="studio-content" id="studioContent">
+              <!-- Panels inserted by JS -->
+            </div>
+
+            <!-- Footer -->
+            <div class="studio-footer">
+              <div class="modification-warning" id="modificationWarning" style="display:none;">
+                &#9888; 修改将影响 <b id="affectedChapterCount">0</b> 个已写章节
+              </div>
+              <div style="margin-left:auto;">
+                <button class="btn btn-primary" onclick="confirmOutline()" id="btnConfirmOutline">
+                  确认大纲 → 开始写作
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         PAGE 3: CHAPTER WRITING
+         ============================================================ -->
+    <div class="page" id="page-chapter-writing">
+      <div class="chapter-writing">
+        <!-- Toolbar -->
+        <div class="writing-toolbar">
+          <div class="chapter-title" id="chapterTitleDisplay">第 47 章 · 宗门大比</div>
+          <div class="chapter-meta">
+            <span>写作Agent: <span style="color:var(--accent);">生成中...</span></span>
+            <span style="color:var(--text-dim);">|</span>
+            <span>已用时: 12s</span>
+          </div>
+        </div>
+
+        <!-- Writing Body — Three Column -->
+        <div class="writing-body" style="position:relative;">
+          <!-- Left Panel Toggle -->
+          <button class="panel-toggle left" onclick="togglePanel('contextPanel')" title="折叠面板">◀</button>
+
+          <!-- Left: Context Panel -->
+          <aside class="context-panel" id="contextPanel">
+            <div class="context-panel-inner">
+              <div class="context-section">
+                <h4>本章情节节点</h4>
+                <div class="context-item">
+                  <div class="ci-label">主节点</div>
+                  <div>宗门大比 · 决赛 — 林风与萧寒的三年之约</div>
+                </div>
+              </div>
+
+              <div class="context-section">
+                <h4>涉及角色</h4>
+                <div class="context-item">
+                  <b>林风</b> (主角) — 📍 宗门比武台 · 😤 战意高昂<br/>
+                  <span style="font-size:11px;color:var(--text-muted);">目标: 击败萧寒，证明炼丹师也能战斗</span>
+                </div>
+                <div class="context-item">
+                  <b>萧寒</b> (对手) — 📍 宗门比武台 · 😏 自信<br/>
+                  <span style="font-size:11px;color:var(--text-muted);">目标: 维护剑修尊严</span>
+                </div>
+                <div class="context-item">
+                  <b>柳月</b> (配角) — 📍 观战台 · 😰 担忧<br/>
+                  <span style="font-size:11px;color:var(--text-muted);">暗中帮助过林风修炼</span>
+                </div>
+              </div>
+
+              <div class="context-section">
+                <h4>场景</h4>
+                <div class="context-item">宗门比武台 — 可容纳三千弟子的圆形竞技场</div>
+              </div>
+
+              <div class="context-section">
+                <h4>前情提要</h4>
+                <div class="context-summary">
+                  第46章: 林风在金丹期突破后，击败半决赛对手。柳月暗中传递萧寒的剑法破绽...
+                </div>
+                <div class="context-summary" style="margin-top:6px;">
+                  第45章: 柳月夜访林风住处，告知萧寒修炼了禁术...
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Center: Writing Area -->
+          <main class="writing-area">
+            <div class="writing-content">
+              <div class="chapter-text typing-cursor" id="chapterText">
+                <p>宗门比武台上，林风握紧了手中的丹炉。对面站着的不是别人，正是三年前在入门测试中羞辱过他的萧寒。</p>
+                <p>"三年之约，到了。"萧寒冷声道，手中长剑出鞘三寸，剑芒在阳光下泛着诡异的暗紫色。</p>
+                <p>台下三千弟子屏息凝神。这是本届宗门大比的最终决战——一个炼丹师，对上了内门第一剑修。</p>
+                <p>林风没有回答，只是将一缕灵力注入丹炉。青色的火焰在炉底燃起，照亮了他平静的面容...</p>
+              </div>
+            </div>
+          </main>
+
+          <!-- Right Panel Toggle -->
+          <button class="panel-toggle right" onclick="togglePanel('statusPanel')" title="折叠面板">▶</button>
+
+          <!-- Right: Status Panel -->
+          <aside class="status-panel" id="statusPanel">
+            <div class="status-panel-inner">
+              <div class="status-section">
+                <h4>生成状态</h4>
+                <div class="generation-indicator">
+                  <span class="generation-dot"></span>
+                  写作Agent 生成中...
+                </div>
+              </div>
+
+              <div class="status-section">
+                <h4>实时字数</h4>
+                <div class="word-count-display">
+                  <div class="wc-number" id="liveWordCount">—</div>
+                  <div class="wc-label">字</div>
+                </div>
+              </div>
+
+              <div class="status-section">
+                <h4>Agent 状态</h4>
+                <div class="agent-progress-list">
+                  <div class="agent-progress-item done">
+                    <span class="ap-dot done"></span> 调度器 — 上下文已组装
+                  </div>
+                  <div class="agent-progress-item running">
+                    <span class="ap-dot running"></span> 写作Agent — 生成中
+                  </div>
+                  <div class="agent-progress-item waiting">
+                    <span class="ap-dot waiting"></span> 角色Agent — 等待补充
+                  </div>
+                  <div class="agent-progress-item waiting">
+                    <span class="ap-dot waiting"></span> 情节Agent — 等待补充
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <!-- Writing Footer -->
+        <div class="writing-footer">
+          <button class="btn btn-primary" onclick="confirmChapter()">&#10003; 确认发布</button>
+          <button class="btn btn-secondary" onclick="showToast('info', '正在使用新指导重新生成...')">&#8635; 重新生成</button>
+          <button class="btn btn-ghost" onclick="showToast('info', '进入手动编辑模式')">&#9998; 手动编辑</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-container -->
+
+</div><!-- /app-shell -->
+
+<!-- ============================================================
+     NEW PROJECT MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="newProjectModal">
+  <div class="modal">
+    <h3>新建项目</h3>
+    <p>输入你的创作需求，调度器将协调角色、情节、环境、主题、叙事五个智能体为你构建大纲。</p>
+    <div class="form-group">
+      <label class="form-label">书名</label>
+      <input class="form-input" type="text" placeholder="给你的小说起个名字..." id="newProjectTitle">
+    </div>
+    <div class="form-group">
+      <label class="form-label">创作需求</label>
+      <textarea class="form-textarea" rows="4" placeholder="描述你想要的故事：类型、背景、核心冲突、主角设定、想要的主题..." id="newProjectDesc"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeNewProjectModal()">取消</button>
+      <button class="btn btn-primary" onclick="createNewProject()">开始构建大纲</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ============================================================
+// APP STATE
+// ============================================================
+const state = {
+  currentPage: 'dashboard',
+  currentProject: null,
+  currentModule: 'theme',
+  isWriting: false
+};
+
+// ============================================================
+// PAGE NAVIGATION
+// ============================================================
+function navigateTo(page, projectName) {
+  state.currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+
+  // Update topbar nav
+  const nav = document.getElementById('topbarNav');
+  if (page === 'dashboard') {
+    nav.innerHTML = '<button data-page="dashboard" class="active">项目</button>';
+    document.querySelector('.topbar-brand').innerHTML =
+      '<div class="brand-icon">&#9998;</div>NovalWriter';
+  } else if (page === 'outline-studio') {
+    nav.innerHTML = `
+      <button data-page="dashboard">← 项目</button>
+      <span style="color:var(--text-dim);padding:6px 4px;">/</span>
+      <button data-page="outline-studio" class="active">${projectName}</button>
+    `;
+    document.querySelector('.topbar-brand').innerHTML =
+      '<div class="brand-icon">&#9998;</div>' + projectName;
+    state.currentProject = projectName;
+    initPlotTree();
+    initStudioContent();
+  } else if (page === 'chapter-writing') {
+    nav.innerHTML = `
+      <button data-page="dashboard">← 项目</button>
+      <span style="color:var(--text-dim);padding:6px 4px;">/</span>
+      <button data-page="outline-studio">${state.currentProject}</button>
+      <span style="color:var(--text-dim);padding:6px 4px;">/</span>
+      <button data-page="chapter-writing" class="active">写作</button>
+    `;
+  }
+
+  // Re-bind nav clicks
+  nav.querySelectorAll('button[data-page]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = btn.dataset.page;
+      if (p === 'dashboard') navigateTo('dashboard');
+      else if (p === 'outline-studio') navigateTo('outline-studio', state.currentProject);
+      else if (p === 'chapter-writing' && state.currentProject) navigateTo('chapter-writing', state.currentProject);
+    });
+  });
+}
+
+// ============================================================
+// DASHBOARD → OUTLINE STUDIO
+// ============================================================
+function openOutlineStudio(projectName) {
+  navigateTo('outline-studio', projectName);
+}
+
+// ============================================================
+// MODULE TABS
+// ============================================================
+document.getElementById('moduleTabs').addEventListener('click', (e) => {
+  const tab = e.target.closest('.module-tab');
+  if (!tab) return;
+  state.currentModule = tab.dataset.module;
+  document.querySelectorAll('.module-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  initStudioContent();
+  // Flash modification warning
+  const warn = document.getElementById('modificationWarning');
+  if (state.currentProject === '修仙从炼丹开始') {
+    warn.style.display = 'flex';
+    document.getElementById('affectedChapterCount').textContent = '2';
+  }
+});
+
+// ============================================================
+// STUDIO CONTENT — Render module panels
+// ============================================================
+function initStudioContent() {
+  const container = document.getElementById('studioContent');
+  const m = state.currentModule;
+
+  const panels = {
+    theme: `
+      <div class="module-panel active">
+        <h2>&#9733; 主题设定</h2>
+        <div class="form-group">
+          <label class="form-label">核心主题陈述</label>
+          <textarea class="form-textarea" rows="4">弱小不是生存的障碍，傲慢才是。一个被视为废物的炼丹师，用最被低估的力量改变世界。</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">情感基调</label>
+          <input class="form-input" value="热血激昂中带着深沉克制，以炼丹隐喻人生修行">
+        </div>
+        <div class="form-group">
+          <label class="form-label">关键词标签</label>
+          <div class="tag-list">
+            <span class="tag">成长</span><span class="tag">逆袭</span><span class="tag">炼丹</span>
+            <span class="tag">友情</span><span class="tag">师徒</span><span class="tag">修仙</span>
+            <span class="tag">东方幻想</span><span class="tag">慢热</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">禁忌话题</label>
+          <input class="form-input" value="不涉及政治隐喻、过度暴力描写">
+        </div>
+      </div>
+    `,
+
+    characters: `
+      <div class="module-panel active">
+        <h2>&#128100; 角色管理</h2>
+        <div class="character-grid">
+          <div class="character-card selected">
+            <div class="character-card-header">
+              <span class="character-name">林风</span>
+              <span class="character-role">主角</span>
+            </div>
+            <div class="character-details">
+              <div class="detail-row"><span class="detail-label">外貌</span>清秀少年，因常年炼丹指尖有淡青色痕迹</div>
+              <div class="detail-row"><span class="detail-label">性格</span>坚韧不拔，重情重义，表面冷漠内心温柔</div>
+              <div class="detail-row"><span class="detail-label">动机</span>成为最强炼丹师，复活师父</div>
+              <div class="detail-row"><span class="detail-label">弧线</span>从被轻视的废材到以丹道证道的强者</div>
+            </div>
+            <div class="character-current-state">
+              <span class="state-tag">&#128205; 青云宗内门</span>
+              <span class="state-tag">&#128513; 战意高昂</span>
+              <span class="state-tag">&#127919; 击败萧寒</span>
+            </div>
+            <div class="ooc-warning">
+              &#9888; OOC风险: 最近3章对话偏活泼，与"表面冷漠"设定不符
+            </div>
+          </div>
+
+          <div class="character-card">
+            <div class="character-card-header">
+              <span class="character-name">萧寒</span>
+              <span class="character-role">对手</span>
+            </div>
+            <div class="character-details">
+              <div class="detail-row"><span class="detail-label">外貌</span>剑眉星目，白衣长剑，剑修标准姿态</div>
+              <div class="detail-row"><span class="detail-label">性格</span>骄傲自负，但内心有不可言说的恐惧</div>
+              <div class="detail-row"><span class="detail-label">动机</span>维护剑修尊严，隐藏自己修炼禁术的秘密</div>
+            </div>
+            <div class="character-current-state">
+              <span class="state-tag">&#128205; 宗门比武台</span>
+              <span class="state-tag">&#128527; 自信满满</span>
+            </div>
+          </div>
+
+          <div class="character-card">
+            <div class="character-card-header">
+              <span class="character-name">柳月</span>
+              <span class="character-role">配角</span>
+            </div>
+            <div class="character-details">
+              <div class="detail-row"><span class="detail-label">外貌</span>紫衣女修，眼角有泪痣</div>
+              <div class="detail-row"><span class="detail-label">性格</span>聪慧机敏，内心善良但行事谨慎</div>
+              <div class="detail-row"><span class="detail-label">动机</span>暗中帮助林风，偿还前世因果</div>
+            </div>
+            <div class="character-current-state">
+              <span class="state-tag">&#128205; 观战台</span>
+              <span class="state-tag">&#128552; 担忧</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `,
+
+    plot: `
+      <div class="module-panel active">
+        <h2>&#128196; 情节管理</h2>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:var(--space-lg);">
+          点击左侧情节树中的节点查看详情。此处显示当前选中节点的信息。
+        </p>
+        <div class="form-group">
+          <label class="form-label">选中节点</label>
+          <input class="form-input" value="宗门大比 · 决赛">
+        </div>
+        <div class="form-group">
+          <label class="form-label">节点描述</label>
+          <textarea class="form-textarea" rows="4">林风在宗门大比决赛中对战萧寒。萧寒使用禁术被揭穿。林风用炼丹术的独特战斗方式获胜，赢得宗门尊重。同时为下一卷"试炼"埋下伏笔——萧寒背后的势力开始浮出水面。</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">章节预估</label>
+          <input class="form-input" value="第46-48章 (3章)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">关联角色</label>
+          <div class="tag-list">
+            <span class="tag">林风</span><span class="tag">萧寒</span><span class="tag">柳月</span>
+          </div>
+        </div>
+      </div>
+    `,
+
+    setting: `
+      <div class="module-panel active">
+        <h2>&#127758; 环境 / 世界观</h2>
+        <div class="form-group">
+          <label class="form-label">世界观概述</label>
+          <textarea class="form-textarea" rows="3">青云大陆，修真文明。修士分九境：炼气→筑基→金丹→元婴→化神→合体→渡劫→大乘→飞升。炼丹师地位特殊，虽战力不如剑修，但掌控修炼资源命脉。</textarea>
+        </div>
+        <div class="scene-card">
+          <div class="scene-card-header">
+            <span class="scene-name">青云宗 · 比武台</span>
+            <span style="font-size:11px;color:var(--text-muted);">第46-48章</span>
+          </div>
+          <div class="character-details">
+            <div class="detail-row"><span class="detail-label">描述</span>圆形竞技场，可容纳三千弟子。中央比武台由青石铺就，周围有防护阵法。</div>
+            <div class="detail-row"><span class="detail-label">氛围</span>紧张、肃穆、万众瞩目</div>
+          </div>
+        </div>
+        <div class="scene-card">
+          <div class="scene-card-header">
+            <span class="scene-name">青云宗 · 炼丹房</span>
+            <span style="font-size:11px;color:var(--text-muted);">常驻场景</span>
+          </div>
+          <div class="character-details">
+            <div class="detail-row"><span class="detail-label">描述</span>林风的个人炼丹室，位于内门偏僻处。丹炉、药架、古籍散落。</div>
+            <div class="detail-row"><span class="detail-label">氛围</span>安静、专注、药香弥漫</div>
+          </div>
+        </div>
+      </div>
+    `,
+
+    narrative: `
+      <div class="module-panel active">
+        <h2>&#128221; 叙事规则</h2>
+        <div class="form-group">
+          <label class="form-label">视角 (POV)</label>
+          <input class="form-input" value="第三人称有限视角 — 主要跟随林风，偶尔切换至关键配角">
+        </div>
+        <div class="form-group">
+          <label class="form-label">时态</label>
+          <input class="form-input" value="过去时叙事（中文自然叙事）">
+        </div>
+        <div class="form-group">
+          <label class="form-label">章节节奏模板</label>
+          <textarea class="form-textarea" rows="3">每章3000-6000字。开篇场景切入 + 核心冲突展开 + 至少一个炼丹/修炼细节 + 结尾悬念或情感钩子。战斗章节可延长至8000字。</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">对话风格</label>
+          <input class="form-input" value="符合角色性格。林风话少而有力，萧寒冷傲带刺，柳月含蓄暗藏深意。避免现代口语。">
+        </div>
+        <div class="form-group">
+          <label class="form-label">描写密度</label>
+          <input class="form-input" value="中等 — 动作场景简洁，情感场景细腻，炼丹场景需技术细节">
+        </div>
+      </div>
+    `
+  };
+
+  container.innerHTML = panels[m] || panels.theme;
+}
+
+// ============================================================
+// PLOT TREE
+// ============================================================
+const plotData = [
+  { id: 'v1', label: '第一卷: 觉醒', expanded: true, children: [
+    { id: 'c1', label: '第1-3章: 发现天赋', badge: '✓' },
+    { id: 'c2', label: '第4-7章: 初入宗门', badge: '✓' },
+    { id: 'c3', label: '第8-10章: 宗门大比', badge: '3/3', active: true, children: [
+      { id: 'c3a', label: '第8章: 预选赛' },
+      { id: 'c3b', label: '第9章: 半决赛' },
+      { id: 'c3c', label: '第10章: 决赛（进行中）' }
+    ]}
+  ]},
+  { id: 'v2', label: '第二卷: 试炼', expanded: false, children: [
+    { id: 'v2a', label: '第11-15章: 秘境探险' },
+    { id: 'v2b', label: '第16-20章: 暗流涌动' }
+  ]},
+  { id: 'v3', label: '第三卷: 风云', expanded: false, children: [
+    { id: 'v3a', label: '第21-28章: 宗门之战' }
+  ]}
+];
+
+function initPlotTree() {
+  const container = document.getElementById('plotTree');
+  container.innerHTML = buildTreeHTML(plotData, 0);
+  bindTreeEvents(container);
+}
+
+function buildTreeHTML(nodes, depth) {
+  return nodes.map(n => `
+    <div class="tree-node">
+      <div class="tree-node-header${n.active ? ' active' : ''}" data-id="${n.id}" data-depth="${depth}">
+        ${n.children ? `<span class="tree-toggle${n.expanded ? ' expanded' : ''}">▶</span>` : '<span style="width:16px;"></span>'}
+        <span class="tree-node-label">${n.label}</span>
+        ${n.badge ? `<span class="tree-node-badge">${n.badge}</span>` : ''}
+      </div>
+      ${n.children ? `<div class="tree-children${n.expanded ? '' : ' collapsed'}">${buildTreeHTML(n.children, depth + 1)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function bindTreeEvents(container) {
+  container.querySelectorAll('.tree-node-header').forEach(header => {
+    header.addEventListener('click', function(e) {
+      const toggle = this.querySelector('.tree-toggle');
+      const children = this.parentElement.querySelector('.tree-children');
+      if (toggle && children) {
+        toggle.classList.toggle('expanded');
+        children.classList.toggle('collapsed');
+      }
+      // Highlight active
+      container.querySelectorAll('.tree-node-header').forEach(h => h.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+}
+
+// ============================================================
+// CONFIRM OUTLINE → START WRITING
+// ============================================================
+function confirmOutline() {
+  if (state.currentProject === '修仙从炼丹开始') {
+    navigateTo('chapter-writing', state.currentProject);
+    simulateWriting();
+  } else {
+    showToast('success', '大纲已确认！点击"开始写作"进入写作模式');
+    document.getElementById('btnConfirmOutline').textContent = '✓ 大纲已确认 → 开始写作';
+    document.getElementById('btnConfirmOutline').style.background = 'var(--success)';
+    document.getElementById('btnConfirmOutline').style.borderColor = 'var(--success)';
+    // In real app, this would trigger WS: state_change to WRITING
+  }
+}
+
+// ============================================================
+// SIMULATE WRITING (Demo)
+// ============================================================
+function simulateWriting() {
+  let wordCount = 0;
+  const target = 4200;
+  const counter = document.getElementById('liveWordCount');
+  const interval = setInterval(() => {
+    if (wordCount >= target) {
+      clearInterval(interval);
+      counter.textContent = target.toLocaleString();
+      // Update agent statuses
+      document.querySelectorAll('.agent-progress-item').forEach(item => {
+        item.classList.remove('running', 'waiting');
+        item.classList.add('done');
+        item.querySelector('.ap-dot').classList.remove('running', 'waiting');
+        item.querySelector('.ap-dot').classList.add('done');
+      });
+      document.querySelector('.chapter-meta span').innerHTML = '写作Agent: <span style="color:var(--success);">已完成</span>';
+      document.querySelector('.generation-indicator').innerHTML =
+        '<span style="color:var(--success);">&#10003;</span> 生成完成';
+      showToast('success', '第47章生成完成，请确认发布');
+      return;
+    }
+    wordCount += Math.floor(Math.random() * 200) + 50;
+    if (wordCount > target) wordCount = target;
+    counter.textContent = wordCount.toLocaleString();
+  }, 300);
+}
+
+// ============================================================
+// CHAPTER ACTIONS
+// ============================================================
+function confirmChapter() {
+  showToast('success', '第47章已确认发布！调度器正在触发补充优化...');
+  setTimeout(() => {
+    showToast('info', '角色Agent: 状态已更新');
+    showToast('info', '情节Agent: 进度已推进');
+  }, 1500);
+}
+
+// ============================================================
+// PANEL TOGGLE
+// ============================================================
+function togglePanel(panelId) {
+  const panel = document.getElementById(panelId);
+  panel.classList.toggle('collapsed');
+  const toggle = panel.previousElementSibling;
+  if (toggle && toggle.classList.contains('panel-toggle')) {
+    toggle.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
+  }
+  const toggleRight = panel.nextElementSibling;
+  if (toggleRight && toggleRight.classList.contains('panel-toggle')) {
+    toggleRight.textContent = panel.classList.contains('collapsed') ? '◀' : '▶';
+  }
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openNewProjectModal() {
+  document.getElementById('newProjectModal').classList.add('open');
+}
+
+function closeNewProjectModal() {
+  document.getElementById('newProjectModal').classList.remove('open');
+}
+
+function createNewProject() {
+  const title = document.getElementById('newProjectTitle').value || '未命名项目';
+  closeNewProjectModal();
+  showToast('success', `项目"${title}"已创建，正在启动大纲构建...`);
+  setTimeout(() => {
+    state.currentProject = title;
+    navigateTo('outline-studio', title);
+    // Simulate agent progress
+    simulateOutlineBuilding();
+  }, 1000);
+}
+
+function simulateOutlineBuilding() {
+  const agents = ['主题Agent', '角色Agent', '情节Agent', '环境Agent', '叙事Agent'];
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i >= agents.length) {
+      clearInterval(interval);
+      showToast('success', '大纲构建完成！请审阅各模块内容');
+      document.getElementById('modificationWarning').style.display = 'none';
+      return;
+    }
+    showToast('info', `${agents[i]}: 分析完成`);
+    i++;
+  }, 800);
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(type, message) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    toast.style.transition = 'all 300ms ease-in';
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeNewProjectModal();
+  if (e.ctrlKey && e.key === '1') navigateTo('dashboard');
+  if (e.ctrlKey && e.key === '2' && state.currentProject) navigateTo('outline-studio', state.currentProject);
+  if (e.ctrlKey && e.key === '3' && state.currentProject) navigateTo('chapter-writing', state.currentProject);
+});
+
+// ============================================================
+// INIT
+// ============================================================
+console.log('%c NovalWriter %c"Writer\'s Study" ',
+  'color:#d4a853;font-size:18px;font-family:serif;',
+  'color:#b8ae9a;font-size:12px;');
+console.log('%cA multi-agent novel writing system', 'color:#6b6358;font-size:11px;');
+</script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+env/
+
+# Node / Frontend
+node_modules/
+.next/
+dist/
+.cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Superpowers
+.superpowers/
+
+# Project specific
+projects/          # User generated content (novel data)
+logs/
+*.log
+uploads/
+
+# Database
+*.sqlite3
+*.db
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.lcov
+
+# Docker
+.docker/
+
+# Temp
+tmp/
+temp/
