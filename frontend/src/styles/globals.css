@@ -47,3 +47,8 @@ html, body, #root {
 ::-webkit-scrollbar-thumb:hover { background: var(--border-accent); }
 
 ::selection { background: rgba(212, 168, 83, 0.3); color: var(--text-primary); }
+
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
