@@ -56,33 +56,22 @@ export default function OutlineStudio({
     setLoading(true);
     setError(null);
     try {
-      // First try to get existing outline
       const p = await fetchProject();
-      if (
-        p &&
-        (p.status === 'idle' || p.status === 'building_outline')
-      ) {
-        // Project is idle or outline is being built — attempt build
-        try {
-          const built = await api.buildOutline(projectId);
-          setOutline(built.outline);
-          showToast('success', '大纲已生成');
-        } catch {
-          // Build might already be in progress; try getting existing outline
-          try {
-            const existing = await api.getOutline(projectId);
-            setOutline(existing.outline);
-          } catch {
-            setOutline(null);
-          }
-        }
-      } else if (p) {
+      if (p && p.status !== 'idle') {
+        // Project has been built — load existing outline from GET endpoint
         try {
           const existing = await api.getOutline(projectId);
-          setOutline(existing.outline);
+          if (existing.outline && Object.keys(existing.outline).length > 0) {
+            setOutline(existing.outline);
+          } else {
+            setOutline(null);
+          }
         } catch {
           setOutline(null);
         }
+      } else {
+        // New project — show build prompt
+        setOutline(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : '加载大纲失败');
