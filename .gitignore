@@ -40,7 +40,8 @@ apikey.txt
 .superpowers/
 
 # Project specific
-projects/          # User generated content (novel data)
+projects/
+backend/projects/   # User generated outline/chapter data
 logs/
 *.log
 uploads/
