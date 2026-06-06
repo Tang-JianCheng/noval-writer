@@ -40,6 +40,7 @@ export default function OutlineStudio({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [building, setBuilding] = useState(false);
+  const [buildingStage, setBuildingStage] = useState('');
   const [confirming, setConfirming] = useState(false);
 
   const fetchProject = useCallback(async () => {
@@ -88,11 +89,11 @@ export default function OutlineStudio({
 
   const handleBuildOutline = async () => {
     setBuilding(true);
+    setBuildingStage('信息搜集 Agent 工作中...');
     try {
       const result = await api.buildOutline(projectId);
       setOutline(result.outline);
       showToast('success', '大纲构建成功');
-      // Refresh project to get updated status
       const p = await fetchProject();
       if (p) setProject(p);
     } catch (err) {
@@ -102,6 +103,7 @@ export default function OutlineStudio({
       );
     } finally {
       setBuilding(false);
+      setBuildingStage('');
     }
   };
 
@@ -642,7 +644,7 @@ export default function OutlineStudio({
                 opacity: building ? 0.5 : 1,
               }}
             >
-              {building ? '构建中...' : '构建大纲'}
+              {building ? (buildingStage || '构建中...') : '构建大纲'}
             </button>
           </div>
         )}
