@@ -50,7 +50,7 @@ export function useApi() {
     buildOutline: (projectId: string) =>
       request<{ outline: OutlineData; status: string }>(
         `/projects/${projectId}/outline/build`,
-        { method: 'POST', timeout: 120000 },
+        { method: 'POST', timeout: 600000 },
       ),
 
     getOutline: (projectId: string) =>
