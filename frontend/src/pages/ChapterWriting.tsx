@@ -154,14 +154,27 @@ export default function ChapterWriting({
   const handleGenerateChapter = async () => {
     setGenerating(true);
     try {
-      await api.generateChapter(projectId);
-      showToast('info', '章节生成中，请稍候...');
+      const result = await api.generateChapter(projectId);
+      const newChapter: ChapterData = {
+        id: result.chapter_id,
+        chapter_number: result.chapter_number,
+        title: result.title,
+        status: 'draft',
+        word_count: result.word_count,
+        summary: (result.summary as Record<string, unknown>)?.summary as string || '',
+        version: 1,
+      };
+      setCurrentChapter(newChapter);
+      setChapterText(result.content);
+      setChapters(prev => [...prev, newChapter]);
+      showToast('success', `第 ${result.chapter_number} 章生成完成`);
     } catch (err) {
-      setGenerating(false);
       showToast(
         'error',
         err instanceof Error ? err.message : '生成失败',
       );
+    } finally {
+      setGenerating(false);
     }
   };
 

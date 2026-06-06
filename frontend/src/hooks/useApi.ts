@@ -1,4 +1,4 @@
-import type { Project, OutlineData } from '../types';
+import type { Project, OutlineData, ChapterGenerateResponse } from '../types';
 
 const BASE = '/api';
 
@@ -65,9 +65,9 @@ export function useApi() {
       ),
 
     generateChapter: (projectId: string) =>
-      request<{ chapter_number: number }>(
+      request<ChapterGenerateResponse>(
         `/projects/${projectId}/chapters/next`,
-        { method: 'POST' },
+        { method: 'POST', timeout: 600000 },
       ),
 
     confirmChapter: (projectId: string, chapterNum: number) =>

@@ -58,6 +58,16 @@ export interface OutlineData {
   narrative?: Record<string, unknown>;
 }
 
+export interface ChapterGenerateResponse {
+  project_id: string;
+  chapter_number: number;
+  chapter_id: string;
+  title: string;
+  content: string;
+  word_count: number;
+  summary: Record<string, unknown>;
+}
+
 export interface WebSocketEvent {
   event: string;
   data: Record<string, unknown>;
