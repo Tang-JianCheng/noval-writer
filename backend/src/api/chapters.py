@@ -188,6 +188,23 @@ async def generate_next_chapter(
     chapter.content_path = _chapter_path(project_id, next_num)
     await db.commit()
 
+    # Background: supplement plot tree
+    try:
+        outline_data = _load_outline(project_id) or {}
+        if outline_data.get("plot_nodes"):
+            from ..agents.plot import PlotAgent
+            plot_agent = PlotAgent(llm)
+            plot_prompt = f"""现有情节：{json.dumps(outline_data['plot_nodes'], ensure_ascii=False)[:2000]}
+新生成的第{next_num}章：{content[:1500]}
+
+请更新情节结构。如果内容中出现了新的情节线，请添加新节点。输出完整的plot_nodes JSON。"""
+            plot_result = await plot_agent.run({"user_requirements": plot_prompt})
+            if plot_result.get("plot_nodes"):
+                outline_data["plot_nodes"] = plot_result
+                _save_outline(project_id, outline_data)
+    except Exception:
+        pass
+
     return {
         "project_id": project_id,
         "chapter_number": next_num,
@@ -200,12 +217,33 @@ async def generate_next_chapter(
 
 
 @router.post("/{chapter_number}/confirm")
-async def confirm_chapter(project_id: str, chapter_number: int, db: AsyncSession = Depends(get_db)):
+async def confirm_chapter(project_id: str, chapter_number: int, db: AsyncSession = Depends(get_db),
+                           llm: LLMClient = Depends(get_llm_client)):
     ch_svc = ChapterService(db)
     chapter = await ch_svc.get_chapter(project_id, chapter_number)
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
     await ch_svc.confirm(chapter)
+
+    # Background: supplement plot tree with chapter content
+    try:
+        outline = _load_outline(project_id) or {}
+        content = _load_chapter_text(project_id, chapter_number)
+        if content and outline.get("plot_nodes"):
+            from ..agents.plot import PlotAgent
+            agent = PlotAgent(llm)
+            prompt = f"""现有情节结构：{json.dumps(outline['plot_nodes'], ensure_ascii=False)[:2000]}
+已完成的第{chapter_number}章内容摘要：{content[:1500]}
+
+请分析这一章的内容，更新情节结构。如果这章完成了某个情节节点，请标记为completed。如果出现了新的情节线，请添加新节点。
+输出完整的更新后的plot_nodes JSON。"""
+            result = await agent.run({"user_requirements": prompt})
+            if result.get("plot_nodes"):
+                outline["plot_nodes"] = result
+                _save_outline(project_id, outline)
+    except Exception:
+        pass  # Non-blocking: plot supplement failure shouldn't block confirmation
+
     return {"project_id": project_id, "chapter_number": chapter_number, "status": chapter.status.value}
 
 
@@ -287,6 +325,25 @@ async def delete_chapter(project_id: str, chapter_number: int, db: AsyncSession 
         os.remove(path)
     await db.delete(chapter)
     await db.commit()
+
+    # Also update plot: remove references to this chapter
+    try:
+        outline = _load_outline(project_id) or {}
+        nodes = outline.get("plot_nodes", {}).get("plot_nodes", []) if isinstance(outline.get("plot_nodes"), dict) else outline.get("plot_nodes", [])
+        if nodes:
+            def clean_nodes(ns):
+                for n in ns:
+                    if n.get("actual_chapter") == chapter_number:
+                        n["actual_chapter"] = None
+                        n["status"] = "pending"
+                    if n.get("children"):
+                        clean_nodes(n["children"])
+            clean_nodes(nodes)
+            outline["plot_nodes"] = {"plot_nodes": nodes}
+            _save_outline(project_id, outline)
+    except Exception:
+        pass
+
     return {"deleted": True, "chapter_number": chapter_number}
 
 
