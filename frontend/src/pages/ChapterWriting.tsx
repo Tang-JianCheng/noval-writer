@@ -161,19 +161,15 @@ export default function ChapterWriting({
     setGenerating(true);
     setShowRetryInput(false);
     try {
-      await api.retryChapter(
-        projectId,
-        currentChapter.chapter_number,
-        retryGuidance,
-      );
+      const result = await api.retryChapter(projectId, currentChapter.chapter_number, retryGuidance);
       setRetryGuidance('');
-      showToast('info', '重新生成中...');
+      setChapterText(result.content);
+      setCurrentChapter(prev => prev ? { ...prev, word_count: result.word_count } : prev);
+      showToast('success', `第 ${currentChapter.chapter_number} 章已重新生成`);
     } catch (err) {
+      showToast('error', err instanceof Error ? err.message : '重试失败');
+    } finally {
       setGenerating(false);
-      showToast(
-        'error',
-        err instanceof Error ? err.message : '重试失败',
-      );
     }
   };
 

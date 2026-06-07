@@ -92,10 +92,10 @@ export function useApi() {
       chapterNum: number,
       guidance?: string,
     ) =>
-      request<{ status: string }>(
+      request<{ content: string; word_count: number }>(
         `/projects/${projectId}/chapters/${chapterNum}/retry`,
         {
-          method: 'POST',
+          method: 'POST', timeout: 600000,
           body: JSON.stringify({ guidance: guidance || '' }),
         },
       ),
