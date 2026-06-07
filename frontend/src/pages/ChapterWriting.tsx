@@ -302,7 +302,13 @@ export default function ChapterWriting({
                   {chapters.map((ch) => (
                     <div
                       key={ch.id}
-                      onClick={() => setCurrentChapter(ch)}
+                      onClick={async () => {
+                        setCurrentChapter(ch);
+                        try {
+                          const full = await api.getChapter(projectId, ch.chapter_number);
+                          setChapterText(full.content || '');
+                        } catch { /* ignore */ }
+                      }}
                       style={{
                         padding: '6px 8px',
                         marginBottom: 4,
@@ -663,7 +669,19 @@ export default function ChapterWriting({
           flexShrink: 0,
         }}
       >
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
+          <input
+            type="text"
+            value={nextGuidance}
+            onChange={(e) => setNextGuidance(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !generating) handleGenerateChapter(); }}
+            placeholder="下一章要写什么？（可选，回车直接生成）"
+            style={{
+              flex: 1, maxWidth: 400, padding: '6px 12px',
+              background: 'var(--bg-input)', border: '1px solid var(--border-default)',
+              borderRadius: 6, color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+            }}
+          />
           {showRetryInput && currentChapter ? (
             <>
               <input
