@@ -188,20 +188,32 @@ async def generate_next_chapter(
     chapter.content_path = _chapter_path(project_id, next_num)
     await db.commit()
 
-    # Background: supplement plot tree
+    # Background: update plot status (non-destructive — only mark chapter as having content)
     try:
         outline_data = _load_outline(project_id) or {}
-        if outline_data.get("plot_nodes"):
-            from ..agents.plot import PlotAgent
-            plot_agent = PlotAgent(llm)
-            plot_prompt = f"""现有情节：{json.dumps(outline_data['plot_nodes'], ensure_ascii=False)[:2000]}
-新生成的第{next_num}章：{content[:1500]}
-
-请更新情节结构。如果内容中出现了新的情节线，请添加新节点。输出完整的plot_nodes JSON。"""
-            plot_result = await plot_agent.run({"user_requirements": plot_prompt})
-            if plot_result.get("plot_nodes"):
-                outline_data["plot_nodes"] = plot_result
-                _save_outline(project_id, outline_data)
+        nodes_wrapper = outline_data.get("plot_nodes", {})
+        if isinstance(nodes_wrapper, dict):
+            nodes = nodes_wrapper.get("plot_nodes", [])
+        else:
+            nodes = nodes_wrapper if isinstance(nodes_wrapper, list) else []
+        if nodes:
+            def mark_chapter(ns):
+                for n in ns:
+                    est = n.get("chapter_estimate", "")
+                    if est:
+                        parts = est.split("-")
+                        try:
+                            lo, hi = int(parts[0]), int(parts[-1]) if len(parts) > 1 else int(parts[0])
+                            if lo <= next_num <= hi and n.get("status") != "completed":
+                                n["status"] = "in_progress" if next_num < hi else "completed"
+                                n["actual_chapter"] = next_num
+                        except ValueError:
+                            pass
+                    if n.get("children"):
+                        mark_chapter(n["children"])
+            mark_chapter(nodes)
+            outline_data["plot_nodes"] = {"plot_nodes": nodes} if isinstance(nodes_wrapper, dict) else nodes
+            _save_outline(project_id, outline_data)
     except Exception:
         pass
 
@@ -225,24 +237,34 @@ async def confirm_chapter(project_id: str, chapter_number: int, db: AsyncSession
         raise HTTPException(status_code=404, detail="Chapter not found")
     await ch_svc.confirm(chapter)
 
-    # Background: supplement plot tree with chapter content
+    # Background: mark plot node as completed
     try:
         outline = _load_outline(project_id) or {}
-        content = _load_chapter_text(project_id, chapter_number)
-        if content and outline.get("plot_nodes"):
-            from ..agents.plot import PlotAgent
-            agent = PlotAgent(llm)
-            prompt = f"""现有情节结构：{json.dumps(outline['plot_nodes'], ensure_ascii=False)[:2000]}
-已完成的第{chapter_number}章内容摘要：{content[:1500]}
-
-请分析这一章的内容，更新情节结构。如果这章完成了某个情节节点，请标记为completed。如果出现了新的情节线，请添加新节点。
-输出完整的更新后的plot_nodes JSON。"""
-            result = await agent.run({"user_requirements": prompt})
-            if result.get("plot_nodes"):
-                outline["plot_nodes"] = result
-                _save_outline(project_id, outline)
+        nodes_wrapper = outline.get("plot_nodes", {})
+        if isinstance(nodes_wrapper, dict):
+            nodes = nodes_wrapper.get("plot_nodes", [])
+        else:
+            nodes = nodes_wrapper if isinstance(nodes_wrapper, list) else []
+        if nodes:
+            def mark_done(ns):
+                for n in ns:
+                    est = n.get("chapter_estimate", "")
+                    if est:
+                        parts = est.split("-")
+                        try:
+                            hi = int(parts[-1]) if len(parts) > 1 else int(parts[0])
+                            if chapter_number >= hi:
+                                n["status"] = "completed"
+                                n["actual_chapter"] = chapter_number
+                        except ValueError:
+                            pass
+                    if n.get("children"):
+                        mark_done(n["children"])
+            mark_done(nodes)
+            outline["plot_nodes"] = {"plot_nodes": nodes} if isinstance(nodes_wrapper, dict) else nodes
+            _save_outline(project_id, outline)
     except Exception:
-        pass  # Non-blocking: plot supplement failure shouldn't block confirmation
+        pass
 
     return {"project_id": project_id, "chapter_number": chapter_number, "status": chapter.status.value}
 
