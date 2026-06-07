@@ -760,6 +760,29 @@ export default function ChapterWriting({
         <div style={{ display: 'flex', gap: 8 }}>
           {currentChapter && currentChapter.status !== 'confirmed' && (
             <button
+              onClick={async () => {
+                if (!confirm(`确定要删除第 ${currentChapter.chapter_number} 章吗？`)) return;
+                try {
+                  await api.deleteChapter(projectId, currentChapter.chapter_number);
+                  setChapters(prev => prev.filter(c => c.id !== currentChapter.id));
+                  const remaining = chapters.filter(c => c.id !== currentChapter.id);
+                  if (remaining.length > 0) {
+                    const prev = remaining[remaining.length - 1];
+                    setCurrentChapter(prev);
+                    try { const full = await api.getChapter(projectId, prev.chapter_number); setChapterText(full.content || ''); } catch {}
+                  } else {
+                    setCurrentChapter(null); setChapterText('');
+                  }
+                  showToast('success', '章节已删除');
+                } catch (err) {
+                  showToast('error', err instanceof Error ? err.message : '删除失败');
+                }
+              }}
+              style={{ background: 'var(--danger-bg)', color: 'var(--danger)', border: '1px solid var(--danger)', padding: '7px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
+            >删除</button>
+          )}
+          {currentChapter && currentChapter.status !== 'confirmed' && (
+            <button
               onClick={handleConfirmChapter}
               disabled={confirming || generating}
               style={{

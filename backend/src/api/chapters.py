@@ -273,6 +273,23 @@ async def get_chapter(project_id: str, chapter_number: int, db: AsyncSession = D
     }
 
 
+@router.delete("/{chapter_number}")
+async def delete_chapter(project_id: str, chapter_number: int, db: AsyncSession = Depends(get_db)):
+    ch_svc = ChapterService(db)
+    chapter = await ch_svc.get_chapter(project_id, chapter_number)
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    if chapter.status == ChapterStatus.CONFIRMED:
+        raise HTTPException(status_code=400, detail="已确认的章节不可删除")
+    # Remove file
+    path = _chapter_path(project_id, chapter_number)
+    if os.path.exists(path):
+        os.remove(path)
+    await db.delete(chapter)
+    await db.commit()
+    return {"deleted": True, "chapter_number": chapter_number}
+
+
 @router.put("/{chapter_number}")
 async def edit_chapter(project_id: str, chapter_number: int, data: ChapterEdit,
                         db: AsyncSession = Depends(get_db)):

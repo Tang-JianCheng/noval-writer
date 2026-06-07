@@ -84,6 +84,9 @@ export function useApi() {
         { method: 'POST' },
       ),
 
+    deleteChapter: (projectId: string, chapterNum: number) =>
+      request<{ deleted: boolean }>(`/projects/${projectId}/chapters/${chapterNum}`, { method: 'DELETE' }),
+
     retryChapter: (
       projectId: string,
       chapterNum: number,
