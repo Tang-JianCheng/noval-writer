@@ -307,6 +307,19 @@ export default function OutlineStudio({ projectId, onNavigate }: OutlineStudioPr
                   <div>
                     {editMode ? (
                       <>
+                        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                          <button onClick={() => {
+                            const newNode: PlotNode = { id: 'node_' + Date.now(), title: '新节点', description: '', parent_id: node.id, chapter_estimate: '', status: 'pending', importance: 'sub', sort_order: 0, children: [] };
+                            const addChild = (ns: PlotNode[]): PlotNode[] => ns.map(n => n.id === activePlotId ? { ...n, children: [...(n.children || []), newNode] } : { ...n, children: n.children ? addChild(n.children) : undefined });
+                            updateDraft(['plot_nodes', 'plot_nodes'], addChild(rawNodes));
+                          }} style={{ background: 'var(--accent)', color: '#1a1714', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 11 }}>+ 添加子节点</button>
+                          <button onClick={() => {
+                            if (!confirm(`确定要删除"${node.title}"及其所有子节点吗？`)) return;
+                            const remove = (ns: PlotNode[]): PlotNode[] => ns.filter(n => n.id !== activePlotId).map(n => ({ ...n, children: n.children ? remove(n.children) : undefined }));
+                            updateDraft(['plot_nodes', 'plot_nodes'], remove(rawNodes));
+                            setActivePlotId(undefined);
+                          }} style={{ background: 'var(--danger-bg)', color: 'var(--danger)', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 11 }}>删除此节点</button>
+                        </div>
                         <input value={node.title} onChange={e => {
                           const update = (ns: PlotNode[]): PlotNode[] => ns.map(n => n.id === activePlotId ? { ...n, title: e.target.value } : { ...n, children: n.children ? update(n.children) : undefined });
                           updateDraft(['plot_nodes', 'plot_nodes'], update(rawNodes));
