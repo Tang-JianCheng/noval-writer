@@ -35,121 +35,51 @@ export default function ChapterWriting({
   const [showRetryInput, setShowRetryInput] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
+  const projectRef = useRef(project);
+  projectRef.current = project;
+
   const connectWs = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) return;
 
     setWsStatus('connecting');
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/projects/${projectId}`;
     const ws = new WebSocket(wsUrl);
 
-    ws.onopen = () => {
-      setWsStatus('connected');
-    };
+    ws.onopen = () => setWsStatus('connected');
 
     ws.onmessage = (event) => {
       try {
         const msg: WebSocketEvent = JSON.parse(event.data);
-        const time = new Date().toLocaleTimeString('zh-CN');
         setWsMessages((prev) => [
           ...prev.slice(-49),
-          { event: msg.event, data: msg.data, time },
+          { event: msg.event, data: msg.data, time: new Date().toLocaleTimeString('zh-CN') },
         ]);
-
-        if (msg.event === 'chapter_generated' && msg.data) {
-          const newChapter: ChapterData = {
-            id: (msg.data.id as string) || '',
-            chapter_number: (msg.data.chapter_number as number) || 0,
-            title: (msg.data.title as string) || '',
-            status: 'draft',
-            word_count: (msg.data.word_count as number) || 0,
-            summary: (msg.data.summary as string) || '',
-            version: (msg.data.version as number) || 1,
-          };
-          setCurrentChapter(newChapter);
-          setChapterText((msg.data.content as string) || '');
-          setChapters((prev) => {
-            const existing = prev.findIndex(
-              (c) => c.chapter_number === newChapter.chapter_number,
-            );
-            if (existing >= 0) {
-              const updated = [...prev];
-              updated[existing] = newChapter;
-              return updated;
-            }
-            return [...prev, newChapter];
-          });
-          setGenerating(false);
-          showToast('success', `第 ${newChapter.chapter_number} 章生成完成`);
-        }
-
-        if (msg.event === 'generation_error') {
-          setGenerating(false);
-          showToast('error', '生成出错，请重试');
-        }
-
-        if (
-          msg.event === 'status_update' &&
-          msg.data.status === 'completed'
-        ) {
-          if (project) {
-            setProject({ ...project, status: 'completed' });
-          }
-        }
-      } catch {
-        // Ignore parse errors
-      }
+      } catch { /* ignore */ }
     };
 
-    ws.onerror = () => {
-      setWsStatus('disconnected');
-    };
-
-    ws.onclose = () => {
-      setWsStatus('disconnected');
-      // Reconnect after 3 seconds
-      setTimeout(() => {
-        if (wsRef.current === ws) {
-          connectWs();
-        }
-      }, 3000);
-    };
+    ws.onerror = () => setWsStatus('disconnected');
+    ws.onclose = () => setWsStatus('disconnected');
 
     wsRef.current = ws;
-  }, [projectId, project]);
+  }, [projectId]);
 
   const fetchProject = useCallback(async () => {
     try {
       const p = await api.getProject(projectId);
       setProject(p);
       return p;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   }, [api, projectId]);
 
   useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        await fetchProject();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '加载项目失败');
-      } finally {
-        setLoading(false);
-      }
-    };
-    init();
+    fetchProject().finally(() => setLoading(false));
     connectWs();
-
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
-      }
+      if (wsRef.current) { wsRef.current.close(); wsRef.current = null; }
     };
-  }, [connectWs, fetchProject]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   const handleGenerateChapter = async () => {
     setGenerating(true);
