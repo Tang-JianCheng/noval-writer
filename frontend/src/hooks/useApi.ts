@@ -64,6 +64,14 @@ export function useApi() {
         { method: 'POST' },
       ),
 
+    listChapters: (projectId: string) =>
+      request<ChapterData[]>(`/projects/${projectId}/chapters`),
+
+    getChapter: (projectId: string, chapterNum: number) =>
+      request<ChapterGenerateResponse & { status: string }>(
+        `/projects/${projectId}/chapters/${chapterNum}`,
+      ),
+
     generateChapter: (projectId: string) =>
       request<ChapterGenerateResponse>(
         `/projects/${projectId}/chapters/next`,

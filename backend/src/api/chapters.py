@@ -241,6 +241,26 @@ async def retry_chapter(
     }
 
 
+@router.get("/{chapter_number}")
+async def get_chapter(project_id: str, chapter_number: int, db: AsyncSession = Depends(get_db)):
+    ch_svc = ChapterService(db)
+    chapter = await ch_svc.get_chapter(project_id, chapter_number)
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    content = _load_chapter_text(project_id, chapter_number)
+    return {
+        "project_id": project_id,
+        "chapter_number": chapter.chapter_number,
+        "chapter_id": chapter.id,
+        "title": chapter.title,
+        "status": chapter.status.value,
+        "content": content,
+        "word_count": chapter.word_count,
+        "summary": chapter.summary,
+        "version": chapter.version,
+    }
+
+
 @router.put("/{chapter_number}")
 async def edit_chapter(project_id: str, chapter_number: int, data: ChapterEdit,
                         db: AsyncSession = Depends(get_db)):

@@ -73,7 +73,28 @@ export default function ChapterWriting({
   }, [api, projectId]);
 
   useEffect(() => {
-    fetchProject().finally(() => setLoading(false));
+    const init = async () => {
+      setLoading(true);
+      await fetchProject();
+      // Load existing chapters
+      try {
+        const chs = await api.listChapters(projectId);
+        if (chs.length > 0) {
+          setChapters(chs);
+          const last = chs[chs.length - 1];
+          // Load full content for the last chapter
+          try {
+            const full = await api.getChapter(projectId, last.chapter_number);
+            setCurrentChapter({ ...last, ...full, status: full.status as ChapterData['status'] });
+            setChapterText(full.content || '');
+          } catch {
+            setCurrentChapter(last);
+          }
+        }
+      } catch { /* no chapters yet */ }
+      setLoading(false);
+    };
+    init();
     connectWs();
     return () => {
       if (wsRef.current) { wsRef.current.close(); wsRef.current = null; }
