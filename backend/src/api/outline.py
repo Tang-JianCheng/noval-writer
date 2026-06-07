@@ -9,6 +9,12 @@ from ..dispatcher.orchestrator import OutlineOrchestrator
 from ..dispatcher.state_machine import DispatcherState
 from .deps import get_llm_client
 from ..llm.base import LLMClient
+from ..agents.theme import ThemeAgent
+from ..agents.character import CharacterAgent
+from ..agents.plot import PlotAgent
+from ..agents.setting import SettingAgent
+from ..agents.narrative import NarrativeAgent
+from ..agents.information import InformationAgent
 from pydantic import BaseModel
 from .schemas import OutlineConfirm
 
@@ -71,6 +77,33 @@ async def get_outline(project_id: str, db: AsyncSession = Depends(get_db)):
         return {"project_id": project_id, "outline": outline, "status": status}
     else:
         return {"project_id": project_id, "outline": {}, "status": status}
+
+
+_AGENTS = {
+    "information": InformationAgent,
+    "theme": ThemeAgent,
+    "characters": CharacterAgent,
+    "plot_nodes": PlotAgent,
+    "setting": SettingAgent,
+    "narrative": NarrativeAgent,
+}
+
+
+@router.post("/rebuild/{module}")
+async def rebuild_module(project_id: str, module: str, llm: LLMClient = Depends(get_llm_client)):
+    if module not in _AGENTS:
+        raise HTTPException(status_code=400, detail=f"Unknown module: {module}")
+    current = _load_outline(project_id) or {}
+    agent = _AGENTS[module](llm)
+    context = {"user_requirements": current.get("theme", {}).get("statement", ""),
+                "theme": str(current.get("theme", {})),
+                "characters": str(current.get("characters", {})),
+                "plot_nodes": str(current.get("plot_nodes", {})),
+                "scenes": str(current.get("setting", {}))}
+    result = await agent.run(context)
+    current[module] = result
+    _save_outline(project_id, current)
+    return {"project_id": project_id, "module": module, "outline": current}
 
 
 @router.put("")

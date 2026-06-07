@@ -56,11 +56,28 @@ export default function OutlineStudio({ projectId, onNavigate }: OutlineStudioPr
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [rebuilding, setRebuilding] = useState('');
 
   // Sync draft when outline loads
   useEffect(() => {
     if (outline) setDraft(JSON.parse(JSON.stringify(outline)));
   }, [outline]);
+
+  const rebuildModule = async (module: string) => {
+    setRebuilding(module);
+    try {
+      const resp = await fetch(`/api/projects/${projectId}/outline/rebuild/${module}`, { method: 'POST' });
+      if (resp.ok) {
+        const data = await resp.json();
+        setOutline(data.outline);
+        showToast('success', `${module} 已重新生成`);
+      } else {
+        showToast('error', '重新生成失败');
+      }
+    } catch {
+      showToast('error', '重新生成失败');
+    } finally { setRebuilding(''); }
+  };
 
   const saveOutline = async () => {
     if (!draft) return;
@@ -141,7 +158,7 @@ export default function OutlineStudio({ projectId, onNavigate }: OutlineStudioPr
     const info = (draft || outline)?.information;
     return (
       <div style={{ padding: 24 }}>
-        <Header title="信息搜集" onSave={saveOutline} editMode={editMode} setEditMode={setEditMode} saving={saving} />
+        <Header title="信息搜集" moduleKey="information" onRebuild={rebuildModule} rebuilding={rebuilding} onSave={saveOutline} editMode={editMode} setEditMode={setEditMode} saving={saving} />
         {info && Object.keys(info).length > 0 ? (
           Object.entries(info).map(([cat, items]) => (
             <div key={cat} style={{ marginBottom: 16 }}>
@@ -181,7 +198,7 @@ export default function OutlineStudio({ projectId, onNavigate }: OutlineStudioPr
     const theme = (draft || outline)?.theme as Record<string, unknown> | undefined;
     return (
       <div style={{ padding: 24 }}>
-        <Header title="主题分析" onSave={saveOutline} editMode={editMode} setEditMode={setEditMode} saving={saving} />
+        <Header title="主题分析" moduleKey="theme" onRebuild={rebuildModule} rebuilding={rebuilding} onSave={saveOutline} editMode={editMode} setEditMode={setEditMode} saving={saving} />
         {theme ? (
           <div>
             <label style={labelStyle}>主题陈述</label>
@@ -206,7 +223,7 @@ export default function OutlineStudio({ projectId, onNavigate }: OutlineStudioPr
     const chars = (draft || outline)?.characters?.characters || [];
     return (
       <div style={{ padding: 24 }}>
-        <Header title="角色列表" onSave={saveOutline} editMode={editMode} setEditMode={setEditMode} saving={saving}
+        <Header title="角色列表" moduleKey="characters" onRebuild={rebuildModule} rebuilding={rebuilding} onSave={saveOutline} editMode={editMode} setEditMode={setEditMode} saving={saving}
           extra={editMode ? <button onClick={() => {
             const newChar = { id: 'char_' + Date.now(), name: '新角色', role_type: 'supporting', card: { appearance: '', personality: '', motivation: '', arc: '', speech_style: '' }, initial_state: { location: '', mood: '', goal: '' }, current_state: { location: '', mood: '', goal: '' }, is_active: true, version: 1 };
             updateDraft(['characters', 'characters'], [...chars, newChar]);
@@ -265,7 +282,7 @@ export default function OutlineStudio({ projectId, onNavigate }: OutlineStudioPr
     const nodes = (draft || outline)?.plot_nodes?.plot_nodes || [];
     return (
       <div style={{ padding: 24 }}>
-        <Header title="情节结构" onSave={saveOutline} editMode={editMode} setEditMode={setEditMode} saving={saving} />
+        <Header title="情节结构" moduleKey="plot_nodes" onRebuild={rebuildModule} rebuilding={rebuilding} onSave={saveOutline} editMode={editMode} setEditMode={setEditMode} saving={saving} />
         {nodes.length > 0 ? (
           <div>
             <PlotTree nodes={nodes} activeId={activePlotId} onSelect={(n: PlotNode) => setActivePlotId(n.id)} />
@@ -308,7 +325,7 @@ export default function OutlineStudio({ projectId, onNavigate }: OutlineStudioPr
     const scenes = (setting?.scenes as Record<string, string>[]) || [];
     return (
       <div style={{ padding: 24 }}>
-        <Header title="环境设定" onSave={saveOutline} editMode={editMode} setEditMode={setEditMode} saving={saving} />
+        <Header title="环境设定" moduleKey="setting" onRebuild={rebuildModule} rebuilding={rebuilding} onSave={saveOutline} editMode={editMode} setEditMode={setEditMode} saving={saving} />
         {setting ? (
           <div>
             <label style={labelStyle}>世界观概述</label>
@@ -342,7 +359,7 @@ export default function OutlineStudio({ projectId, onNavigate }: OutlineStudioPr
     const narr = (draft || outline)?.narrative as Record<string, string> | undefined;
     return (
       <div style={{ padding: 24 }}>
-        <Header title="叙事策略" onSave={saveOutline} editMode={editMode} setEditMode={setEditMode} saving={saving} />
+        <Header title="叙事策略" moduleKey="narrative" onRebuild={rebuildModule} rebuilding={rebuilding} onSave={saveOutline} editMode={editMode} setEditMode={setEditMode} saving={saving} />
         {narr ? (
           <div>
             {['pov', 'tense', 'chapter_template', 'dialogue_style', 'description_density', 'rhythm_notes'].map(field => (
@@ -410,7 +427,7 @@ export default function OutlineStudio({ projectId, onNavigate }: OutlineStudioPr
           </span>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={handleBuildOutline} disabled={building} style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-default)', padding: '7px 16px', borderRadius: 6, cursor: building ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 500 }}>
-              {building ? '重建中...' : '重新构建'}
+              {building ? '全部重建中...' : '全部重建'}
             </button>
             <button onClick={handleConfirmOutline} disabled={!canConfirm || confirming} style={{ background: 'var(--accent)', color: '#1a1714', border: 'none', padding: '7px 24px', borderRadius: 6, cursor: !canConfirm || confirming ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13, opacity: !canConfirm || confirming ? 0.5 : 1 }}>
               {confirming ? '确认中...' : '开始写作 →'}
@@ -424,9 +441,10 @@ export default function OutlineStudio({ projectId, onNavigate }: OutlineStudioPr
 }
 
 // Small header component for each tab
-function Header({ title, onSave, editMode, setEditMode, saving, extra }: {
+function Header({ title, onSave, editMode, setEditMode, saving, extra, moduleKey, onRebuild, rebuilding }: {
   title: string; onSave: () => void; editMode: boolean;
   setEditMode: (v: boolean) => void; saving: boolean; extra?: React.ReactNode;
+  moduleKey?: string; onRebuild?: (m: string) => void; rebuilding?: string;
 }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
@@ -435,6 +453,12 @@ function Header({ title, onSave, editMode, setEditMode, saving, extra }: {
         {extra}
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
+        {moduleKey && onRebuild && (
+          <button onClick={() => onRebuild(moduleKey)} disabled={rebuilding === moduleKey}
+            style={{ background: 'var(--warning-bg)', color: 'var(--warning)', border: '1px solid rgba(212,148,58,0.3)', padding: '6px 12px', borderRadius: 6, cursor: rebuilding ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 500 }}>
+            {rebuilding === moduleKey ? '生成中...' : '重新生成'}
+          </button>
+        )}
         {editMode ? (
           <>
             <button onClick={onSave} disabled={saving} style={{ background: 'var(--accent)', color: '#1a1714', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
