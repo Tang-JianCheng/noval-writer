@@ -278,42 +278,63 @@ export default function OutlineStudio({ projectId, onNavigate }: OutlineStudioPr
     );
   };
 
+  // Ensure all nodes have IDs
+  const ensureIds = (ns: PlotNode[], prefix = 'n'): PlotNode[] => ns.map((n, i) => ({
+    ...n,
+    id: n.id || `${prefix}_${i}`,
+    children: n.children ? ensureIds(n.children, `${prefix}_${i}`) : undefined,
+  }));
+
   const renderPlotTab = () => {
-    const nodes = (draft || outline)?.plot_nodes?.plot_nodes || [];
+    const rawNodes = (draft || outline)?.plot_nodes?.plot_nodes || [];
+    const nodes = ensureIds(rawNodes);
+    const findNode = (ns: PlotNode[], id: string): PlotNode | null => {
+      for (const n of ns) { if (n.id === id) return n; if (n.children) { const f = findNode(n.children, id); if (f) return f; } }
+      return null;
+    };
+
     return (
       <div style={{ padding: 24 }}>
         <Header title="情节结构" moduleKey="plot_nodes" onRebuild={rebuildModule} rebuilding={rebuilding} onSave={saveOutline} editMode={editMode} setEditMode={setEditMode} saving={saving} />
         {nodes.length > 0 ? (
           <div>
             <PlotTree nodes={nodes} activeId={activePlotId} onSelect={(n: PlotNode) => setActivePlotId(n.id)} />
-            {editMode && activePlotId && (
-              <div style={{ marginTop: 12, padding: 12, background: 'var(--bg-surface)', borderRadius: 6 }}>
-                {(() => {
-                  const findNode = (ns: PlotNode[], id: string): PlotNode | null => {
-                    for (const n of ns) { if (n.id === id) return n; if (n.children) { const f = findNode(n.children, id); if (f) return f; } }
-                    return null;
-                  };
-                  const node = findNode(nodes, activePlotId);
-                  if (!node) return null;
-                  return (
-                    <div>
-                      <input value={node.title} onChange={e => {
-                        const update = (ns: PlotNode[]): PlotNode[] => ns.map(n => n.id === activePlotId ? { ...n, title: e.target.value } : { ...n, children: n.children ? update(n.children) : undefined });
-                        updateDraft(['plot_nodes', 'plot_nodes'], update(nodes));
-                      }} style={inputStyle} placeholder="标题" />
-                      <textarea value={node.description} onChange={e => {
-                        const update = (ns: PlotNode[]): PlotNode[] => ns.map(n => n.id === activePlotId ? { ...n, description: e.target.value } : { ...n, children: n.children ? update(n.children) : undefined });
-                        updateDraft(['plot_nodes', 'plot_nodes'], update(nodes));
-                      }} style={{ ...textareaStyle, marginTop: 6 }} placeholder="描述" rows={3} />
-                      <input value={node.chapter_estimate} onChange={e => {
-                        const update = (ns: PlotNode[]): PlotNode[] => ns.map(n => n.id === activePlotId ? { ...n, chapter_estimate: e.target.value } : { ...n, children: n.children ? update(n.children) : undefined });
-                        updateDraft(['plot_nodes', 'plot_nodes'], update(nodes));
-                      }} style={{ ...inputStyle, marginTop: 6 }} placeholder="章节范围 (如: 1-3)" />
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
+            <div style={{ marginTop: 12, padding: 12, background: 'var(--bg-surface)', borderRadius: 6 }}>
+              {activePlotId && (() => {
+                const node = findNode(nodes, activePlotId);
+                if (!node) return <p style={{ fontSize: 12, color: 'var(--text-dim)' }}>点击左侧节点查看详情</p>;
+                return (
+                  <div>
+                    {editMode ? (
+                      <>
+                        <input value={node.title} onChange={e => {
+                          const update = (ns: PlotNode[]): PlotNode[] => ns.map(n => n.id === activePlotId ? { ...n, title: e.target.value } : { ...n, children: n.children ? update(n.children) : undefined });
+                          updateDraft(['plot_nodes', 'plot_nodes'], update(rawNodes));
+                        }} style={inputStyle} placeholder="标题" />
+                        <textarea value={node.description || ''} onChange={e => {
+                          const update = (ns: PlotNode[]): PlotNode[] => ns.map(n => n.id === activePlotId ? { ...n, description: e.target.value } : { ...n, children: n.children ? update(n.children) : undefined });
+                          updateDraft(['plot_nodes', 'plot_nodes'], update(rawNodes));
+                        }} style={{ ...textareaStyle, marginTop: 6 }} placeholder="描述" rows={4} />
+                        <input value={node.chapter_estimate || ''} onChange={e => {
+                          const update = (ns: PlotNode[]): PlotNode[] => ns.map(n => n.id === activePlotId ? { ...n, chapter_estimate: e.target.value } : { ...n, children: n.children ? update(n.children) : undefined });
+                          updateDraft(['plot_nodes', 'plot_nodes'], update(rawNodes));
+                        }} style={{ ...inputStyle, marginTop: 6 }} placeholder="章节范围 (如: 1-3)" />
+                      </>
+                    ) : (
+                      <>
+                        <h4 style={{ fontFamily: 'var(--font-display)', fontSize: 16, marginBottom: 8 }}>{node.title}</h4>
+                        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{node.description || '暂无描述'}</p>
+                        <div style={{ marginTop: 12, display: 'flex', gap: 16, fontSize: 12, color: 'var(--text-muted)' }}>
+                          <span>章节: {node.chapter_estimate || '未分配'}</span>
+                          <span>重要性: {node.importance || 'main'}</span>
+                          <span>状态: {node.status || 'pending'}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         ) : <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>暂无情节数据</p>}
       </div>
