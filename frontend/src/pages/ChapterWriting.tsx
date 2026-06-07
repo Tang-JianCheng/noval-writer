@@ -33,6 +33,7 @@ export default function ChapterWriting({
   >([]);
   const [retryGuidance, setRetryGuidance] = useState('');
   const [showRetryInput, setShowRetryInput] = useState(false);
+  const [nextGuidance, setNextGuidance] = useState('');
   const wsRef = useRef<WebSocket | null>(null);
 
   const projectRef = useRef(project);
@@ -105,7 +106,8 @@ export default function ChapterWriting({
   const handleGenerateChapter = async () => {
     setGenerating(true);
     try {
-      const result = await api.generateChapter(projectId);
+      const result = await api.generateChapter(projectId, nextGuidance);
+      setNextGuidance('');
       const newChapter: ChapterData = {
         id: result.chapter_id,
         chapter_number: result.chapter_number,
@@ -200,6 +202,19 @@ export default function ChapterWriting({
         projectName={project?.title || '写作'}
         onBack={() => onNavigate({ name: 'dashboard' })}
       />
+      {/* Sub-nav for outline editing */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '6px 24px',
+        background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0,
+      }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>写作中 — 大纲可能需要更新？</span>
+        <button onClick={() => onNavigate({ name: 'outline', projectId })} style={{
+          background: 'var(--bg-elevated)', color: 'var(--accent)', border: '1px solid var(--border-accent)',
+          padding: '4px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 500,
+        }}>
+          编辑大纲
+        </button>
+      </div>
 
       {/* Three-Column Layout */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
@@ -482,6 +497,30 @@ export default function ChapterWriting({
                   >
                     开始写作
                   </p>
+                  <div style={{ width: '100%', maxWidth: 500, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      本章指导（可选）— 描述本章要发生什么
+                    </label>
+                    <textarea
+                      value={nextGuidance}
+                      onChange={(e) => setNextGuidance(e.target.value)}
+                      placeholder="例：主角在宗门大比中遇到宿敌，两人展开激烈的对决..."
+                      rows={3}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        background: 'var(--bg-input)',
+                        border: '1px solid var(--border-default)',
+                        borderRadius: 6,
+                        color: 'var(--text-primary)',
+                        fontFamily: 'var(--font-body)',
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        resize: 'vertical',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
                   <p
                     style={{
                       color: 'var(--text-muted)',

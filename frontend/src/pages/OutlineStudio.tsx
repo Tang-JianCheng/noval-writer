@@ -200,33 +200,52 @@ export default function OutlineStudio({
     </div>
   );
 
+  const [editMode, setEditMode] = useState(false);
+  const [editJson, setEditJson] = useState('');
+
+  const startEditing = () => {
+    setEditJson(JSON.stringify(outline, null, 2));
+    setEditMode(true);
+  };
+
+  const saveEdits = async () => {
+    try {
+      const parsed = JSON.parse(editJson);
+      await fetch(`/api/projects/${projectId}/outline`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outline: parsed }),
+      });
+      setOutline(parsed);
+      setEditMode(false);
+      showToast('success', '大纲已保存');
+    } catch (e) {
+      showToast('error', e instanceof Error ? e.message : 'JSON 格式错误');
+    }
+  };
+
   const renderThemeTab = () => (
     <div style={{ padding: 24 }}>
-      <h3
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 18,
-          marginBottom: 16,
-        }}
-      >
-        主题分析
-      </h3>
-      {outline?.theme ? (
-        <pre
-          style={{
-            fontFamily: 'var(--font-body)',
-            fontSize: 13,
-            color: 'var(--text-secondary)',
-            whiteSpace: 'pre-wrap',
-            lineHeight: 1.6,
-          }}
-        >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18 }}>主题分析</h3>
+        {editMode ? (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={saveEdits} style={{ background: 'var(--accent)', color: '#1a1714', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>保存</button>
+            <button onClick={() => setEditMode(false)} style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)', border: '1px solid var(--border-default)', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>取消</button>
+          </div>
+        ) : (
+          <button onClick={startEditing} style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-default)', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>编辑</button>
+        )}
+      </div>
+      {editMode ? (
+        <textarea value={editJson} onChange={e => setEditJson(e.target.value)}
+          style={{ width: '100%', height: 400, padding: 12, background: 'var(--bg-input)', border: '1px solid var(--border-accent)', borderRadius: 6, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: 12, resize: 'vertical', outline: 'none', lineHeight: 1.5 }} />
+      ) : outline?.theme ? (
+        <pre style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
           {JSON.stringify(outline.theme, null, 2)}
         </pre>
       ) : (
-        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-          暂无主题数据
-        </p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>暂无主题数据</p>
       )}
     </div>
   );

@@ -9,7 +9,12 @@ from ..dispatcher.orchestrator import OutlineOrchestrator
 from ..dispatcher.state_machine import DispatcherState
 from .deps import get_llm_client
 from ..llm.base import LLMClient
+from pydantic import BaseModel
 from .schemas import OutlineConfirm
+
+
+class OutlineUpdate(BaseModel):
+    outline: dict
 
 router = APIRouter(prefix="/api/projects/{project_id}/outline", tags=["outline"])
 
@@ -66,6 +71,12 @@ async def get_outline(project_id: str, db: AsyncSession = Depends(get_db)):
         return {"project_id": project_id, "outline": outline, "status": status}
     else:
         return {"project_id": project_id, "outline": {}, "status": status}
+
+
+@router.put("")
+async def update_outline(project_id: str, data: OutlineUpdate):
+    _save_outline(project_id, data.outline)
+    return {"project_id": project_id, "status": "updated"}
 
 
 @router.post("/confirm")

@@ -72,10 +72,10 @@ export function useApi() {
         `/projects/${projectId}/chapters/${chapterNum}`,
       ),
 
-    generateChapter: (projectId: string) =>
+    generateChapter: (projectId: string, guidance?: string) =>
       request<ChapterGenerateResponse>(
         `/projects/${projectId}/chapters/next`,
-        { method: 'POST', timeout: 600000 },
+        { method: 'POST', timeout: 600000, body: JSON.stringify({ guidance: guidance || '' }) },
       ),
 
     confirmChapter: (projectId: string, chapterNum: number) =>

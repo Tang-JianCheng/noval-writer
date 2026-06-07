@@ -84,9 +84,16 @@ async def list_chapters(project_id: str, db: AsyncSession = Depends(get_db)):
     return list(result.scalars().all())
 
 
+from pydantic import BaseModel
+
+class GenerateRequest(BaseModel):
+    guidance: str = ""
+
+
 @router.post("/next")
 async def generate_next_chapter(
     project_id: str,
+    req: GenerateRequest = GenerateRequest(),
     db: AsyncSession = Depends(get_db),
     llm: LLMClient = Depends(get_llm_client),
 ):
@@ -144,9 +151,14 @@ async def generate_next_chapter(
         background_info=background,
     )
 
+    # Append user guidance if provided
+    prompt = ctx.prompt
+    if req.guidance.strip():
+        prompt += f"\n\n[USER_GUIDANCE]\n用户对本章的具体要求：{req.guidance.strip()}\n请严格遵循以上指导来撰写本章内容。"
+
     # Call Writing Agent
     agent = WritingAgent(llm)
-    result = await agent.run({"assembled_context": ctx.prompt})
+    result = await agent.run({"assembled_context": prompt})
 
     # Parse result — content + summary
     raw = result.get("raw", "")
